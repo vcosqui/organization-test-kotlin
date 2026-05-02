@@ -20,8 +20,10 @@ class OrganizationRepositoryAdapter(
 
         allEntities.forEach { entity ->
             entity.manager?.let { managerEntity ->
-                val employee = domainMap[entity.name]!!
-                val manager = domainMap[managerEntity.name]!!
+                val employee = domainMap[entity.name]
+                    ?: error("Employee '${entity.name}' missing from domain map — data integrity issue")
+                val manager = domainMap[managerEntity.name]
+                    ?: error("Manager '${managerEntity.name}' missing from domain map — data integrity issue")
                 employee.manager = manager
                 if (!manager.managed.contains(employee)) manager.addManaged(employee)
             }
@@ -31,14 +33,18 @@ class OrganizationRepositoryAdapter(
     }
 
     override fun save(organization: Organization) {
-        organization.allEmployees.forEach { employee ->
-            val jpaEntity = employeeCrudRepository.findByNameIs(employee.name)
-                ?: EmployeeJpaEntity(name = employee.name)
-            val jpaManager = employee.manager?.let { mgr ->
-                employeeCrudRepository.findByNameIs(mgr.name) ?: EmployeeJpaEntity(name = mgr.name)
-            }
-            jpaEntity.manager = jpaManager
-            employeeCrudRepository.save(jpaEntity)
+        val existingByName: Map<String, EmployeeJpaEntity> =
+            employeeCrudRepository.findAll().associateBy { it.name }
+
+        val jpaByName: Map<String, EmployeeJpaEntity> = organization.allEmployees.associate { employee ->
+            employee.name to (existingByName[employee.name] ?: EmployeeJpaEntity(name = employee.name))
         }
+
+        organization.allEmployees.forEach { employee ->
+            val jpaEntity = jpaByName[employee.name]!!
+            jpaEntity.manager = employee.manager?.let { jpaByName[it.name] }
+        }
+
+        employeeCrudRepository.saveAll(jpaByName.values.toList())
     }
 }

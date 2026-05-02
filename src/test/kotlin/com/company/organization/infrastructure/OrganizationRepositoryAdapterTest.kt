@@ -41,8 +41,7 @@ internal class OrganizationRepositoryAdapterTest {
         val aliceEntity = EmployeeJpaEntity(id = 1, name = "alice")
         val bobEntity = EmployeeJpaEntity(id = 2, name = "bob")
         val crudRepo = mock<EmployeeCrudRepository> {
-            on { findByNameIs("alice") } doReturn aliceEntity
-            on { findByNameIs("bob") } doReturn bobEntity
+            on { findAll() } doReturn listOf(aliceEntity, bobEntity)
         }
 
         val alice = Employee(1, "alice", null)
@@ -54,18 +53,17 @@ internal class OrganizationRepositoryAdapterTest {
 
         assertThat(bobEntity.manager).isEqualTo(aliceEntity)
         assertThat(aliceEntity.manager).isNull()
-        verify(crudRepo).save(aliceEntity)
-        verify(crudRepo).save(bobEntity)
+        verify(crudRepo).saveAll(listOf(aliceEntity, bobEntity))
     }
 
     @Test
     fun `save creates new JPA entities for employees not yet persisted`() {
-        val crudRepo = mock<EmployeeCrudRepository> { on { findByNameIs(any()) } doReturn null }
+        val crudRepo = mock<EmployeeCrudRepository> { on { findAll() } doReturn emptyList() }
         val alice = Employee(null, "alice", null)
         val org = Organization.reconstitute(listOf(alice))
 
         OrganizationRepositoryAdapter(crudRepo).save(org)
 
-        verify(crudRepo).save(any<EmployeeJpaEntity>())
+        verify(crudRepo).saveAll(any<List<EmployeeJpaEntity>>())
     }
 }
