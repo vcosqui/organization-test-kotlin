@@ -1,14 +1,15 @@
 package com.company.organization.infrastructure
 
 import jakarta.persistence.*
-import jakarta.persistence.CascadeType.ALL
+import jakarta.persistence.CascadeType.MERGE
+import jakarta.persistence.CascadeType.PERSIST
 
 @Entity
 @Table(name = "employee")
 class EmployeeJpaEntity(
     @Id @GeneratedValue var id: Long? = null,
     var name: String = "",
-    @ManyToOne(cascade = [ALL], optional = true) @JoinColumn(name = "manager") var manager: EmployeeJpaEntity? = null,
+    @ManyToOne(cascade = [PERSIST, MERGE], optional = true) @JoinColumn(name = "manager") var manager: EmployeeJpaEntity? = null,
     @OneToMany(mappedBy = "manager") var managed: MutableList<EmployeeJpaEntity> = mutableListOf()
 ) {
     override fun equals(other: Any?): Boolean {
