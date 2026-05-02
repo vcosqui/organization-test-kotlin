@@ -37,6 +37,17 @@ jobs:
       - name: Build
         run: make build BUILD_NUMBER=${{ steps.version.outputs.build_number }}
 
+      - name: Docker login
+        if: github.ref == 'refs/heads/master'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/master'
+        run: make push BUILD_NUMBER=${{ steps.version.outputs.build_number }}
+
       - name: Release
         if: github.ref == 'refs/heads/master'
         env:
