@@ -9,7 +9,6 @@ jobs:
 
     permissions:
       contents: write
-      packages: write
 
     steps:
       - uses: actions/checkout@v6.0.2
@@ -18,9 +17,6 @@ jobs:
         with:
           java-version: '25'
           distribution: 'temurin'
-          server-id: github
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_TOKEN
 
       - uses: actions/cache@v5.0.5
         with:
@@ -40,12 +36,6 @@ jobs:
 
       - name: Build
         run: make build BUILD_NUMBER=${{ steps.version.outputs.build_number }}
-
-      - name: Publish to GitHub Packages
-        run: ./mvnw --batch-mode deploy -DskipTests
-        env:
-          MAVEN_USERNAME: ${{ github.actor }}
-          MAVEN_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release
         if: github.ref == 'refs/heads/master'
