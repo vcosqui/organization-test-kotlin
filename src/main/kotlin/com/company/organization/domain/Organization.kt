@@ -27,17 +27,19 @@ class Organization private constructor(
         verifySingleRoot()
     }
 
-    private fun findOrCreate(name: String): Employee =
-        _employees.firstOrNull { it.name == name }
+    private fun findOrCreate(name: String): Employee {
+        require(name.isNotBlank()) { "Employee name cannot be blank" }
+        return _employees.firstOrNull { it.name == name }
             ?: Employee(null, name, null).also { _employees.add(it) }
+    }
 
     private fun verifySingleRoot() {
         if (_employees.count { it.isRoot() } > 1)
             throw IllegalOrganizationException("Organization must have a single root")
     }
 
-    private fun checkCyclicDep(employee: Employee, target: Employee) {
+    private tailrec fun checkCyclicDep(employee: Employee, target: Employee) {
         if (employee == target) throw IllegalOrganizationException("Cyclic dependency detected for '${target.name}'")
-        employee.manager?.let { checkCyclicDep(it, target) }
+        checkCyclicDep(employee.manager ?: return, target)
     }
 }
