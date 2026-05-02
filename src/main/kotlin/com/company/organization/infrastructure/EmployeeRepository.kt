@@ -12,6 +12,10 @@ class EmployeeRepository(@Autowired val employeeCrudRepository: EmployeeCrudRepo
         return employeeCrudRepository.findByNameIs(name) ?: Employee(null, name, null)
     }
 
+    fun findByName(name: String): Employee? {
+        return employeeCrudRepository.findByNameIs(name)
+    }
+
     fun findRoot(): Employee? {
         return employeeCrudRepository.findDistinctByManagerIsNull().firstOrNull()
     }
