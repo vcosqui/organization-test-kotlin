@@ -1,6 +1,6 @@
 package com.company.organization.domain
 
-data class Employee(
+class Employee(
     val id: Long?,
     val name: String,
     var manager: Employee?,
@@ -19,4 +19,6 @@ data class Employee(
     }
 
     override fun hashCode() = name.hashCode()
+
+    override fun toString() = "Employee(id=$id, name=$name)"
 }
