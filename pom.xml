@@ -111,4 +111,12 @@
         </plugins>
     </build>
 
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/vcosqui/organization-test-kotlin</url>
+        </repository>
+    </distributionManagement>
+
 </project>
