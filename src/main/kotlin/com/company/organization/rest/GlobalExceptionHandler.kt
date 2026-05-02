@@ -1,0 +1,15 @@
+package com.company.organization.rest
+
+import com.company.organization.domain.IllegalOrganizationException
+import org.springframework.http.ResponseEntity
+import org.springframework.http.ResponseEntity.badRequest
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.RestControllerAdvice
+
+@RestControllerAdvice
+class GlobalExceptionHandler {
+
+    @ExceptionHandler(IllegalOrganizationException::class)
+    fun handleIllegalOrganization(ex: IllegalOrganizationException): ResponseEntity<Map<String, String>> =
+        badRequest().body(mapOf("error" to (ex.message ?: "Bad request")))
+}

@@ -13,25 +13,56 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-This is a Spring Boot + Kotlin project for managing organizational hierarchies, structured in three layers:
+This is a Spring Boot + Kotlin project for managing organizational hierarchies following **hexagonal (ports & adapters)** architecture. The dependency rule is enforced: only infrastructure and REST depend on domain, never the reverse.
 
-**REST** (`rest/`) → **Domain** (`domain/`) → **Infrastructure** (`infra/`)
+```
+rest/ ──► domain/port/ ◄── domain/
+               ▲
+          infrastructure/
+```
 
-- `OrganizationController` exposes `GET /organization` — both to retrieve the org structure as hierarchical JSON and to set it from a `Map<String, String>` (supervisor → employee mapping).
-- `Representation.kt` contains `topDown()`, a recursive function that converts the flat employee list into a nested JSON tree.
-- `Organization` is a Spring `@Component` holding business logic for building and querying the org structure.
-- `Employee` is a JPA entity with a self-referencing many-to-one relationship (`manager`) to model the hierarchy.
-- `EmployeeRepository` wraps `EmployeeCrudRepository` (Spring Data JPA `CrudRepository`) with higher-level operations.
-- H2 in-memory database is used at runtime; no persistent storage.
+### Domain (`domain/`)
+
+Framework-free. No Spring or JPA imports anywhere in this package.
+
+- `Employee` — pure Kotlin `data class` modeling the org hierarchy node (manager/managed relationships).
+- `Organization` — plain Kotlin class containing all business logic: building the hierarchy, cycle detection, single-root invariant.
+- `IllegalOrganizationException` — domain exception with no HTTP knowledge.
+- `domain/port/EmployeeRepositoryPort` — output port interface; defines what persistence must provide. Infrastructure implements this.
+- `domain/port/OrganizationUseCase` — input port interface; defines the application's use cases. REST depends on this, not on `Organization` directly.
+
+### Infrastructure (`infrastructure/`)
+
+Owns all JPA/persistence concerns.
+
+- `EmployeeJpaEntity` — JPA `@Entity` with self-referencing `@ManyToOne`/`@OneToMany(mappedBy)` relationship. Kept entirely separate from the domain `Employee`.
+- `EmployeeCrudRepository` — Spring Data `CrudRepository<EmployeeJpaEntity, Long>`.
+- `EmployeeRepository` — `@Component` implementing `EmployeeRepositoryPort`. Translates between `EmployeeJpaEntity` and domain `Employee` via two private mappers: `toDomainWithParents()` (walks up the manager chain, used for cycle detection) and `toDomainWithChildren()` (walks down the managed tree, used for the org display).
+
+### REST (`rest/`)
+
+- `OrganizationController` — `@RestController` that depends on `OrganizationUseCase` (port), not on `Organization` directly.
+- `Representation.kt` — `topDown()` and `upstreamHierarchy()` functions that serialize domain `Employee` objects to nested `Map<String, Any>`.
+- `GlobalExceptionHandler` — `@RestControllerAdvice` that maps `IllegalOrganizationException` to HTTP 400.
+
+### Composition root
+
+- `OrganizationConfig` — `@Configuration` that wires the plain `Organization` class with `EmployeeRepositoryPort`, keeping Spring DI out of the domain.
+
+### H2 in-memory database
+
+No persistent storage; schema is auto-created from `EmployeeJpaEntity` on startup.
 
 ## Testing strategy
 
-- `@DataJpaTest` for repository-layer tests (hits real H2 database).
-- Mockito-Kotlin mocks for unit tests of `EmployeeRepository`.
-- `@SpringBootTest` for integration tests in `IntegrationTests.kt`.
+- `@SpringBootTest` + `@Transactional` for `EmployeeCrudRepositoryTests` (hits real H2 via `EntityManager`).
+- Mockito-Kotlin mocks on `EmployeeCrudRepository` for `EmployeeRepositoryTest` (unit-tests the mapping logic).
+- Plain instantiation with mocked `EmployeeRepositoryPort` for `OrganizationTest` (no Spring context needed).
+- Mocked `OrganizationUseCase` for `OrganizationControllerTest` (no Spring context needed).
+- `@SpringBootTest(webEnvironment = RANDOM_PORT)` for `IntegrationTests` (full HTTP round-trip).
 
 ## Key dependencies
 
-- Java 11, Kotlin 1.4.21, Spring Boot 2.4.2
+- Java 25, Kotlin 2.3.21, Spring Boot 4.0.6
 - Kotlin compiler plugins: `spring`, `jpa`, `all-open` (entities are opened automatically for JPA proxying)
 - Jackson Kotlin module for JSON serialization of data classes

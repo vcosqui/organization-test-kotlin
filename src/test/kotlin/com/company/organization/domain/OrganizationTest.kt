@@ -1,71 +1,62 @@
 package com.company.organization.domain
 
-import com.company.organization.infrastructure.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 
 internal class OrganizationTest {
 
     @Test
+    fun `getRootEmployee returns null when organization is empty`() {
+        assertThat(Organization.empty().getRootEmployee()).isNull()
+    }
+
+    @Test
     fun `getRootEmployee returns root employee`() {
         val root = Employee(1, "root", null)
-        val repo = mock<EmployeeRepository> { on { findRoot() } doReturn root }
-        val org = Organization(repo)
-
+        val org = Organization.reconstitute(listOf(root))
         assertThat(org.getRootEmployee()).isEqualTo(root)
     }
 
     @Test
     fun `getEmployee returns employee by name`() {
-        val employee = Employee(1, "alice", null)
-        val repo = mock<EmployeeRepository> { on { findByName("alice") } doReturn employee }
-        val org = Organization(repo)
-
-        assertThat(org.getEmployee("alice")).isEqualTo(employee)
+        val alice = Employee(1, "alice", null)
+        val org = Organization.reconstitute(listOf(alice))
+        assertThat(org.getEmployee("alice")).isEqualTo(alice)
     }
 
     @Test
     fun `getEmployee throws when employee not found`() {
-        val repo = mock<EmployeeRepository> { on { findByName("ghost") } doReturn null }
-        val org = Organization(repo)
-
-        assertThrows<IllegalOrganizationException> { org.getEmployee("ghost") }
+        assertThrows<IllegalOrganizationException> { Organization.empty().getEmployee("ghost") }
     }
 
     @Test
-    fun `addEmployees calls repository save and sets manager`() {
-        val employee = Employee(null, "bob", null)
-        val manager = Employee(null, "alice", null)
-        val repo = mock<EmployeeRepository> {
-            on { findByNameOrCreate("bob") } doReturn employee
-            on { findByNameOrCreate("alice") } doReturn manager
-            on { countRoots() } doReturn 1L
-        }
-        val org = Organization(repo)
-
+    fun `addEmployees creates employees and sets manager relationship`() {
+        val org = Organization.empty()
         org.addEmployees(mapOf("bob" to "alice"))
 
-        verify(repo).save(employee)
-        assertThat(employee.manager).isEqualTo(manager)
+        val bob = org.getEmployee("bob")
+        val alice = org.getEmployee("alice")
+        assertThat(bob.manager).isEqualTo(alice)
+        assertThat(alice.managed).contains(bob)
     }
 
     @Test
-    fun `addEmployees should fail when more than one root`() {
-        val employee = Employee(null, "bob", null)
-        val manager = Employee(null, "alice", null)
-        val repo = mock<EmployeeRepository> {
-            on { findByNameOrCreate("bob") } doReturn employee
-            on { findByNameOrCreate("alice") } doReturn manager
-            on { countRoots() } doReturn 2L
-        }
-        val org = Organization(repo)
+    fun `addEmployees results in a single root`() {
+        val org = Organization.empty()
+        org.addEmployees(mapOf("bob" to "alice"))
+        assertThat(org.getRootEmployee()?.name).isEqualTo("alice")
+    }
 
-        assertThrows<IllegalOrganizationException> { org.addEmployees(mapOf("bob" to "alice")) }
+    @Test
+    fun `addEmployees should fail when more than one root would exist`() {
+        // Start with two existing roots (alice and charlie), then add a subordinate under alice
+        // — charlie remains a second root, so the invariant must be violated
+        val alice = Employee(null, "alice", null)
+        val charlie = Employee(null, "charlie", null)
+        val org = Organization.reconstitute(listOf(alice, charlie))
+
+        assertThrows<IllegalOrganizationException> { org.addEmployees(mapOf("dave" to "alice")) }
     }
 
     @Test
@@ -73,12 +64,7 @@ internal class OrganizationTest {
         val alice = Employee(1, "alice", null)
         val bob = Employee(2, "bob", alice)
         alice.addManaged(bob)
-        val repo = mock<EmployeeRepository> {
-            on { findByNameOrCreate("alice") } doReturn alice
-            on { findByNameOrCreate("bob") } doReturn bob
-            on { countRoots() } doReturn 1L
-        }
-        val org = Organization(repo)
+        val org = Organization.reconstitute(listOf(alice, bob))
 
         // setting alice's manager to bob would create alice → bob → alice cycle
         assertThrows<IllegalOrganizationException> { org.addEmployees(mapOf("alice" to "bob")) }

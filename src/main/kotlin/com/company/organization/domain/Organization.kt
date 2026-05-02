@@ -1,37 +1,39 @@
 package com.company.organization.domain
 
-import com.company.organization.infrastructure.EmployeeRepository
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
+class Organization private constructor(
+    private val _employees: MutableList<Employee>
+) {
+    val allEmployees: List<Employee> get() = _employees
 
-@Component
-class Organization(@Autowired val employeeRepository: EmployeeRepository) {
-
-    fun getRootEmployee(): Employee? {
-        return employeeRepository.findRoot()
+    companion object {
+        fun empty(): Organization = Organization(mutableListOf())
+        fun reconstitute(employees: List<Employee>): Organization = Organization(employees.toMutableList())
     }
 
-    fun getEmployee(name: String): Employee {
-        return employeeRepository.findByName(name)
+    fun getRootEmployee(): Employee? = _employees.firstOrNull { it.isRoot() }
+
+    fun getEmployee(name: String): Employee =
+        _employees.firstOrNull { it.name == name }
             ?: throw IllegalOrganizationException("Employee '$name' not found")
-    }
 
     fun addEmployees(employeesMap: Map<String, String>) {
         employeesMap.forEach { (employeeName, managerName) ->
-            val employee = employeeRepository.findByNameOrCreate(employeeName)
-            val manager = employeeRepository.findByNameOrCreate(managerName)
+            val employee = findOrCreate(employeeName)
+            val manager = findOrCreate(managerName)
             checkCyclicDep(manager, employee)
             employee.manager = manager
-            manager.addManaged(employee)
-            employeeRepository.save(employee)
+            if (!manager.managed.contains(employee)) manager.addManaged(employee)
         }
         verifySingleRoot()
     }
 
+    private fun findOrCreate(name: String): Employee =
+        _employees.firstOrNull { it.name == name }
+            ?: Employee(null, name, null).also { _employees.add(it) }
+
     private fun verifySingleRoot() {
-        if (employeeRepository.countRoots() > 1) {
+        if (_employees.count { it.isRoot() } > 1)
             throw IllegalOrganizationException("Organization must have a single root")
-        }
     }
 
     private fun checkCyclicDep(employee: Employee, target: Employee) {

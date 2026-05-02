@@ -1,32 +1,22 @@
 package com.company.organization.domain
 
-import jakarta.persistence.*
-import jakarta.persistence.CascadeType.ALL
+data class Employee(
+    val id: Long?,
+    val name: String,
+    var manager: Employee?,
+    val managed: MutableList<Employee> = mutableListOf()
+) {
+    fun isRoot() = manager == null
 
-@Entity
-data class Employee(@Id @GeneratedValue var id: Long?,
-                    var name: String,
-                    @ManyToOne(cascade = [ALL], optional = true) @JoinColumn(name = "manager") var manager: Employee?,
-                    @OneToMany var managed: MutableList<Employee> = mutableListOf()) {
-
-    fun isRoot(): Boolean {
-        return manager == null;
-    }
-
-    fun addManaged(employee: Employee): Unit {
-        managed.add(employee);
+    fun addManaged(employee: Employee) {
+        managed.add(employee)
     }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Employee) return false
-
-        if (name != other.name) return false
-
-        return true
+        return name == other.name
     }
 
-    override fun hashCode(): Int {
-        return name.hashCode()
-    }
+    override fun hashCode() = name.hashCode()
 }

@@ -1,6 +1,5 @@
 package com.company.organization.infrastructure
 
-import com.company.organization.domain.Employee
 import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -11,45 +10,28 @@ import org.springframework.transaction.annotation.Transactional
 @SpringBootTest
 @Transactional
 class EmployeeCrudRepositoryTests @Autowired constructor(
-        val entityManager: EntityManager,
-        val employeeCrudRepository: EmployeeCrudRepository) {
+    val entityManager: EntityManager,
+    val employeeCrudRepository: EmployeeCrudRepository
+) {
 
     @Test
-    fun `When findByNameIs then return Employee`() {
+    fun `findByNameIs returns the employee when it exists`() {
         val name = "alan"
-        createEmployee(Employee(null, name, null))
+        createEmployee(EmployeeJpaEntity(name = name))
         val employee = employeeCrudRepository.findByNameIs(name)
-        assertThat(employee).isEqualTo(Employee(null, name, null))
+        assertThat(employee).isEqualTo(EmployeeJpaEntity(name = name))
     }
 
     @Test
-    fun `When findDistinctByManagerIsNull then return all managers`() {
-        val alan = Employee(null, "alan", null)
-        createEmployee(alan)
-        val ana = Employee(null, "alan", null)
-        createEmployee(ana)
-        createEmployee(Employee(null, "mika", alan))
-        createEmployee(Employee(null, "lula", ana))
-        val managers = employeeCrudRepository.findDistinctByManagerIsNull()
-        assertThat(managers.size).isEqualTo(2)
-        assertThat(managers.contains(alan))
-        assertThat(managers.contains(ana))
+    fun `findAll returns all persisted employees`() {
+        createEmployee(EmployeeJpaEntity(name = "alan"))
+        createEmployee(EmployeeJpaEntity(name = "ana"))
+        val all = employeeCrudRepository.findAll().toList()
+        assertThat(all).hasSize(2)
     }
 
-    @Test
-    fun `When findDistinctByManagerIsNull then count all managers`() {
-        val alan = Employee(null, "alan", null)
-        createEmployee(alan)
-        val ana = Employee(null, "alan", null)
-        createEmployee(ana)
-        createEmployee(Employee(null, "mika", alan))
-        createEmployee(Employee(null, "lula", ana))
-        val managersCount = employeeCrudRepository.countDistinctByManagerIsNull()
-        assertThat(managersCount).isEqualTo(2)
-    }
-
-    private fun createEmployee(employee: Employee) {
-        entityManager.persist(employee)
+    private fun createEmployee(entity: EmployeeJpaEntity) {
+        entityManager.persist(entity)
         entityManager.flush()
     }
 }
