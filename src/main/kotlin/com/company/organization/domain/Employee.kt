@@ -1,7 +1,7 @@
 package com.company.organization.domain
 
-import javax.persistence.*
-import javax.persistence.CascadeType.ALL
+import jakarta.persistence.*
+import jakarta.persistence.CascadeType.ALL
 
 @Entity
 data class Employee(@Id @GeneratedValue var id: Long?,

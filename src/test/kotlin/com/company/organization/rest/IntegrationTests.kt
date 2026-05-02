@@ -4,16 +4,21 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.client.TestRestTemplate
+import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpStatus
+import org.springframework.web.client.RestClient
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class IntegrationTests(@Autowired val restTemplate: TestRestTemplate) {
+class IntegrationTests {
+
+    @LocalServerPort
+    var port: Int = 0
 
     @Test
-    fun `Assert blog page title, content and status code`() {
-        val entity = restTemplate.getForEntity<String>("/organization", String::class.java)
-        assertThat(entity.statusCode).isEqualTo(HttpStatus.OK)
+    fun `Assert organization endpoint returns OK`() {
+        val restClient = RestClient.create("http://localhost:$port")
+        val response = restClient.get().uri("/organization").retrieve().toBodilessEntity()
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
     }
 
 }

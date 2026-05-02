@@ -1,15 +1,17 @@
 package com.company.organization.infrastructure
 
 import com.company.organization.domain.Employee
+import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.transaction.annotation.Transactional
 
-@DataJpaTest
+@SpringBootTest
+@Transactional
 class EmployeeCrudRepositoryTests @Autowired constructor(
-        val entityManager: TestEntityManager,
+        val entityManager: EntityManager,
         val employeeCrudRepository: EmployeeCrudRepository) {
 
     @Test

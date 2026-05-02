@@ -13,7 +13,7 @@ class EmployeeRepository(@Autowired val employeeCrudRepository: EmployeeCrudRepo
     }
 
     fun findRoot(): Employee? {
-        return employeeCrudRepository.findDistinctByManagerIsNull().first()
+        return employeeCrudRepository.findDistinctByManagerIsNull().firstOrNull()
     }
 
     fun countRoots(): Long {
