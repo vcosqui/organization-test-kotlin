@@ -3,7 +3,9 @@ package com.company.organization.application
 import com.company.organization.domain.Employee
 import com.company.organization.domain.port.OrganizationRepositoryPort
 import com.company.organization.domain.port.OrganizationUseCase
+import org.springframework.transaction.annotation.Transactional
 
+@Transactional
 class OrganizationApplicationService(
     private val organizationRepository: OrganizationRepositoryPort
 ) : OrganizationUseCase {
