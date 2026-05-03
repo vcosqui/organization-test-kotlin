@@ -6,4 +6,5 @@ interface OrganizationUseCase {
     fun getRootEmployee(): Employee?
     fun getEmployee(name: String): Employee
     fun addEmployees(employeesMap: Map<String, String>)
+    fun removeEmployee(name: String)
 }

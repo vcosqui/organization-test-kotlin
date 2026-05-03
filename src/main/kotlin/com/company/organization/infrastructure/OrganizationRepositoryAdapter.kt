@@ -32,6 +32,8 @@ class OrganizationRepositoryAdapter(
         return Organization.reconstitute(domainMap.values.toList())
     }
 
+    override fun deleteByName(name: String) = employeeCrudRepository.deleteByName(name)
+
     override fun save(organization: Organization) {
         val existingByName: Map<String, EmployeeJpaEntity> =
             employeeCrudRepository.findAll().associateBy { it.name }

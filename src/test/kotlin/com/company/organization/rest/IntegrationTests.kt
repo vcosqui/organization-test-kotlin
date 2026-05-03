@@ -98,4 +98,69 @@ class IntegrationTests {
         assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
         assertThat(response.body).containsKey("error")
     }
+
+    @Test
+    fun `DELETE leaf employee returns 200 and employee is removed from hierarchy`() {
+        client.post().uri("/organization")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(mapOf("bob" to "alice"))
+            .retrieve().toBodilessEntity()
+
+        val deleteResponse = client.delete().uri("/organization/employee/bob")
+            .retrieve().toBodilessEntity()
+
+        assertThat(deleteResponse.statusCode).isEqualTo(HttpStatus.OK)
+
+        val getResponse = client.get().uri("/organization")
+            .retrieve().toEntity<Map<String, Any>>().body
+
+        assertThat(getResponse).doesNotContainKey("bob")
+    }
+
+    @Test
+    fun `DELETE employee with direct reports returns 400 with error message`() {
+        client.post().uri("/organization")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(mapOf("bob" to "alice"))
+            .retrieve().toBodilessEntity()
+
+        val response = client.delete().uri("/organization/employee/alice")
+            .retrieve()
+            .onStatus({ it.is4xxClientError }) { _, _ -> }
+            .toEntity<Map<String, Any>>()
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(response.body).containsKey("error")
+    }
+
+    @Test
+    fun `DELETE root employee with no direct reports returns 200 and organization is empty`() {
+        client.post().uri("/organization")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(mapOf("bob" to "alice"))
+            .retrieve().toBodilessEntity()
+
+        client.delete().uri("/organization/employee/bob").retrieve().toBodilessEntity()
+
+        val deleteResponse = client.delete().uri("/organization/employee/alice")
+            .retrieve().toBodilessEntity()
+
+        assertThat(deleteResponse.statusCode).isEqualTo(HttpStatus.OK)
+
+        val getResponse = client.get().uri("/organization")
+            .retrieve().toEntity<Map<String, Any>>().body
+
+        assertThat(getResponse).isEmpty()
+    }
+
+    @Test
+    fun `DELETE unknown employee returns 404 with error message`() {
+        val response = client.delete().uri("/organization/employee/ghost")
+            .retrieve()
+            .onStatus({ it.is4xxClientError }) { _, _ -> }
+            .toEntity<Map<String, Any>>()
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.NOT_FOUND)
+        assertThat(response.body).containsKey("error")
+    }
 }

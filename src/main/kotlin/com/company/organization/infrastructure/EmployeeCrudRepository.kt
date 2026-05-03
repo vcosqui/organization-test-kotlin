@@ -4,4 +4,5 @@ import org.springframework.data.repository.CrudRepository
 
 interface EmployeeCrudRepository : CrudRepository<EmployeeJpaEntity, Long> {
     fun findByNameIs(name: String): EmployeeJpaEntity?
+    fun deleteByName(name: String)
 }

@@ -27,6 +27,16 @@ class Organization private constructor(
         verifySingleRoot()
     }
 
+    fun removeEmployee(name: String) {
+        val employee = _employees.find { it.name == name }
+            ?: throw EmployeeNotFoundException(name)
+        if (employee.managed.isNotEmpty())
+            throw IllegalOrganizationException(
+                "Cannot remove '$name': has ${employee.managed.size} direct report(s). Reassign them first.")
+        employee.manager?.managed?.remove(employee)
+        _employees.remove(employee)
+    }
+
     private fun findOrCreate(name: String): Employee {
         require(name.isNotBlank()) { "Employee name cannot be blank" }
         return _employees.firstOrNull { it.name == name }

@@ -2,6 +2,8 @@ package com.company.organization.rest
 
 import com.company.organization.domain.port.OrganizationUseCase
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -22,5 +24,11 @@ class OrganizationController(val organization: OrganizationUseCase) {
     @GetMapping("/organization/employee/{employeeName}/management", produces = [APPLICATION_JSON_VALUE])
     fun getEmployeeManagement(@PathVariable employeeName: String): Map<String, Any> {
         return upstreamHierarchy(organization.getEmployee(employeeName))
+    }
+
+    @DeleteMapping("/organization/employee/{name}")
+    fun removeEmployee(@PathVariable name: String): ResponseEntity<Void> {
+        organization.removeEmployee(name)
+        return ResponseEntity.ok().build()
     }
 }
