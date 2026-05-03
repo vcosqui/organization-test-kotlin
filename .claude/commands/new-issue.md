@@ -1,3 +1,7 @@
+---
+description: Create a GitHub issue with structured REASON, type, and GIVEN/WHEN/THEN acceptance criteria for the ATDD+ARD workflow
+---
+
 Guide the user through creating a well-structured GitHub issue that captures the REASON behind the change and acceptance criteria that will directly drive the ATDD tests.
 
 ## Your goal
