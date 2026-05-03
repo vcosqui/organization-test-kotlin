@@ -21,4 +21,10 @@ class OrganizationApplicationService(
         organization.addEmployees(employeesMap)
         organizationRepository.save(organization)
     }
+
+    override fun removeEmployee(name: String) {
+        val organization = organizationRepository.load()
+        organization.removeEmployee(name)
+        organizationRepository.deleteByName(name)
+    }
 }
